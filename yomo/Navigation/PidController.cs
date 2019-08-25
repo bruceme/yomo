@@ -13,6 +13,7 @@ namespace yomo.Navigation
     /// <see cref="https://en.wikipedia.org/wiki/PID_controller"/>
     public sealed class PidController
     {
+        private bool fresh = true;
         private double processVariable = 0;
 
         public PidController(double GainProportional, double GainIntegral, double GainDerivative, double OutputMax, double OutputMin)
@@ -39,12 +40,19 @@ namespace yomo.Navigation
             IntegralTerm = Clamp(IntegralTerm);
 
             // derivative term calculation
+            //compensate for 1st time calculation
+            if (fresh)
+            {
+                ProcessVariableLast = processVariable;
+                fresh = false;
+            }
             double dInput = processVariable - ProcessVariableLast;
             double derivativeTerm = GainDerivative * (dInput / timeSinceLastUpdate.TotalSeconds);
 
             // proportional term calcullation
             double proportionalTerm = GainProportional * error;
 
+            //todo: verify this should subtract d
             double output = proportionalTerm + IntegralTerm - derivativeTerm;
 
             output = Clamp(output);

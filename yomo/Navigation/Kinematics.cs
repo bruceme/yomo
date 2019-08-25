@@ -57,10 +57,9 @@ namespace yomo.Navigation
 
         public double CalculateSpeed(double speedDesired, double speedActual, TimeSpan elapsedTime)
         {
-            //todo: consider consolidating away from a specific speedpid vs headingpid
             speedPid.SetPoint = speedDesired;
             speedPid.ProcessVariable = speedActual;
-            var speed = speedPid.ControlVariable(elapsedTime);
+            var speed = speedActual + speedPid.ControlVariable(elapsedTime);
 
             return speed;
         }
