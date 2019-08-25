@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Unosquare.RaspberryIO.Abstractions;
 
 namespace yomo.Navigation
 {
@@ -12,8 +11,8 @@ namespace yomo.Navigation
     public class Kinematics
     {
         // The wheels we intend to drive and which pin they are attached to.
-        Wheel left = new Wheel(BcmPin.Gpio13, BcmPin.Gpio06, BcmPin.Gpio05);
-        Wheel right = new Wheel(BcmPin.Gpio18, BcmPin.Gpio23, BcmPin.Gpio24);
+        public Wheel left = new Wheel(13, 6, 5);
+        public Wheel right = new Wheel(18, 23, 24);
 
         DateTime last = DateTime.Now;
 
@@ -30,8 +29,8 @@ namespace yomo.Navigation
             headingPid.SetPoint = headingDesired;
             headingPid.ProcessVariable = headingActual;
 
-            speedPid.SetPoint = speedDesired;
-            speedPid.ProcessVariable = speedActual;
+            //speedPid.SetPoint = speedDesired;
+            //speedPid.ProcessVariable = speedActual;
 
             // Delta time
             var now = DateTime.Now;
@@ -40,15 +39,37 @@ namespace yomo.Navigation
 
             // Run the controller
             var heading = headingPid.ControlVariable(dt);
-            var speed = headingPid.ControlVariable(dt);
+            //var speed = headingPid.ControlVariable(dt);
+
+            //get new speed
+            var speed = CalculateSpeed(speedDesired, speedActual, dt);
 
             // calculate the change in angle from last
             var dAlpha = kAlpha * (headingLast - heading);
             headingLast = heading;
 
             // Electronically "Mix" the speed and angle angle change to set the left/right motor speeds
-            left.SetSpeed((int)(speed + dAlpha));
-            right.SetSpeed((int)(speed - dAlpha));
+
+            var leftSpeed = (int)(speed + dAlpha);
+            var rightSpeed = (int)(speed - dAlpha);
+            Drive(rightSpeed, leftSpeed);
+        }
+
+        public double CalculateSpeed(double speedDesired, double speedActual, TimeSpan elapsedTime)
+        {
+            //todo: consider consolidating away from a specific speedpid vs headingpid
+            speedPid.SetPoint = speedDesired;
+            speedPid.ProcessVariable = speedActual;
+            var speed = speedPid.ControlVariable(elapsedTime);
+
+            return speed;
+        }
+
+        public void Drive(int leftSpeed, int rightSpeed)
+        {
+            right.SetSpeed(rightSpeed);
+            left.SetSpeed(leftSpeed);
+
         }
     }
 }
